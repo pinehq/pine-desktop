@@ -1,0 +1,84 @@
+# Ubuntu 26.04 GNOME smoke-test VM for macOS developers.
+minimumLimaVersion: 2.2.0
+
+base:
+  - template:_images/ubuntu
+
+vmType: vz
+arch: default
+cpus: 6
+memory: 8GiB
+disk: 30GiB
+mountType: virtiofs
+
+containerd:
+  system: false
+  user: false
+
+video:
+  display: vz
+
+provision:
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      export DEBIAN_FRONTEND=noninteractive
+      echo "gdm3 shared/default-x-display-manager select gdm3" | debconf-set-selections
+      apt-get update
+      apt-get install --yes \
+        build-essential \
+        ca-certificates \
+        curl \
+        dbus-x11 \
+        git \
+        libadwaita-1-dev \
+        libgtk-4-dev \
+        libgtksourceview-5-dev \
+        libvte-2.91-gtk4-dev \
+        pkg-config \
+        ubuntu-desktop-minimal
+
+      if ! grep -q '^AutomaticLogin={{.User}}$' /etc/gdm3/custom.conf; then
+        sed -i \
+          '/^\[daemon\]/a AutomaticLoginEnable=true\nAutomaticLogin={{.User}}' \
+          /etc/gdm3/custom.conf
+      fi
+      if grep -q '^#\?WaylandEnable=' /etc/gdm3/custom.conf; then
+        sed -i 's/^#\?WaylandEnable=.*/WaylandEnable=true/' /etc/gdm3/custom.conf
+      else
+        sed -i '/^\[daemon\]/a WaylandEnable=true' /etc/gdm3/custom.conf
+      fi
+
+      systemctl set-default graphical.target
+      systemctl enable gdm3.service
+      systemctl start gdm3.service
+
+  - mode: user
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      if [ ! -x "${HOME}/.cargo/bin/rustup" ]; then
+        curl --proto '=https' --tlsv1.2 -sSf https://sh.rustup.rs |
+          sh -s -- -y --profile minimal --default-toolchain 1.96.1
+      fi
+      "${HOME}/.cargo/bin/rustup" toolchain install 1.96.1 \
+        --component clippy \
+        --component rustfmt \
+        --profile minimal
+
+probes:
+  - mode: readiness
+    description: GNOME and the Rust toolchain are installed
+    script: |
+      #!/bin/bash
+      set -eu
+      test -x "${HOME}/.cargo/bin/cargo"
+      systemctl is-enabled gdm3.service >/dev/null
+
+message: |
+  Pine GNOME VM is ready.
+  GNOME is shown in the native Virtualization.framework display window.
+  Build from the mounted project: cargo run -p pine-linux

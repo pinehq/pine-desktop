@@ -1,8 +1,8 @@
 # Архитектура нативной Linux-версии
 
-- Статус: проектирование
+- Статус: первый vertical slice
 - Дата: 2026-08-10
-- Целевая платформа: современный Linux desktop, Wayland и X11
+- Целевая платформа: Ubuntu 24.04/26.04 LTS, Wayland first и X11 fallback
 - UI toolkit: GTK4 + libadwaita
 
 ## 1. Цель
@@ -43,7 +43,7 @@
 │ GtkSourceView     PineTerminalWidget                           │
 │                        │                                      │
 │                  pine-terminal                                │
-│                  libghostty C ABI                             │
+│              VTE MVP │ libghostty-vt target                   │
 └────────────────────────┬──────────────────────────────────────┘
                          │ typed commands/events
 ┌────────────────────────┴──────────────────────────────────────┐
@@ -68,7 +68,7 @@ pine-desktop/
 │   ├── pine-core/             # чистая доменная модель
 │   ├── pine-linux/            # GTK4 application и окна
 │   ├── pine-editor/           # GtkSourceView, LSP presentation
-│   ├── pine-terminal/         # безопасная обёртка libghostty
+│   ├── pine-terminal/         # backend-neutral terminal contract
 │   ├── pine-git/              # status, diff, branch, worktree
 │   ├── pine-lsp/              # LSP client и lifecycle серверов
 │   ├── pine-adapters/         # каталоги и адаптеры CLI-агентов
@@ -77,8 +77,6 @@ pine-desktop/
 ├── ui/
 │   ├── resources/             # GtkBuilder UI, CSS, icons
 │   └── screenshots/
-├── third_party/
-│   └── ghostty/               # зафиксированная upstream revision
 ├── docs/
 └── tests/
     ├── fixtures/
@@ -159,36 +157,39 @@ Workspace edits проходят предварительную проверку
 - изменения не перекрываются;
 - пользователь подтверждает потенциально широкие операции.
 
-## 7. Терминал и `libghostty`
+## 7. Терминал
 
 ### 7.1 Выбор уровня интеграции
 
-Используется полный `libghostty` через C ABI, а не только `libghostty-vt`.
-`libghostty-vt` предоставляет parser, terminal state и render state, но оставляет
-реальный GPU-рендеринг, шрифты, PTY и platform integration потребителю.
+Ghostty разделяет два разных слоя. Верхнеуровневый `include/ghostty.h` —
+внутренний embedder API, рассчитанный на macOS-приложение Ghostty. Он не является
+поддерживаемой границей для внешнего GTK-приложения. Публичный `libghostty-vt`
+предоставляет parser, terminal state и render state, но не готовый GTK-виджет,
+GPU renderer, шрифты или полный PTY lifecycle.
 
-Полный `libghostty` позволяет раньше получить production-подобный терминал.
-Так как публичный API пока не имеет стабильной версии, проект обязан:
+Поэтому терминал развивается в два этапа:
 
-1. фиксировать точную upstream revision;
-2. собирать её воспроизводимо;
-3. держать весь `unsafe` FFI внутри `pine-terminal`;
-4. не передавать типы Ghostty в `pine-core` или GTK-модели;
-5. иметь contract tests перед обновлением revision.
+1. MVP использует VTE: законченный нативный GTK terminal widget;
+2. целевая реализация использует `libghostty-vt` и собственный Pine renderer на
+   GTK/GSK после отдельного rendering prototype.
+
+Подход повторяет архитектурную границу Zed: terminal engine хранит состояние, а
+приложение рисует его собственной UI-системой. Оба backend скрыты за
+`pine-terminal`; типы VTE, Ghostty и GTK не попадают в `pine-core`.
 
 ### 7.2 `PineTerminalWidget`
 
 GTK-виджет терминала отвечает за:
 
-- создание и уничтожение `ghostty_surface_t`;
-- передачу native surface, scale factor и размеров;
+- создание и уничтожение backend surface;
+- передачу scale factor и размеров будущему renderer;
 - focus, keyboard, IME, mouse и scroll events;
 - clipboard, URL и drag-and-drop callbacks;
 - синхронизацию темы, шрифта и DPI;
 - публикацию title, bell, working directory и process-exit событий;
-- корректное уничтожение surface после остановки callbacks.
+- корректное уничтожение backend после остановки callbacks.
 
-Вызовы Ghostty, требующие GTK, исполняются в GLib main context. Фоновые callback
+Вызовы backend, требующие GTK, исполняются в GLib main context. Фоновые callback
 не обращаются к GTK напрямую, а отправляют bounded event в UI-loop.
 
 ### 7.3 Процесс и PTY
@@ -210,9 +211,9 @@ TerminalLaunch {
 Команда никогда не собирается строковой конкатенацией и не передаётся через
 неявный `sh -c`, если пользователь явно не выбрал shell command.
 
-Если `libghostty` не предоставляет достаточных process lifecycle callbacks,
-терминал остаётся обычным терминалом, но не получает право присоединить процесс
-к существующей задаче. Недостающий сигнал нельзя заменять парсингом вывода.
+Если terminal backend не предоставляет достаточных process lifecycle callbacks,
+он остаётся обычным терминалом, но не получает право присоединить процесс к
+существующей задаче. Недостающий сигнал нельзя заменять парсингом вывода.
 
 ## 8. Доменная модель агентов
 
@@ -364,7 +365,8 @@ GTK/GDK абстрагирует Wayland и X11, но релизные тест�
 - drag-and-drop вкладок и файлов;
 - accessibility через AT-SPI;
 - OpenGL/Vulkan fallback и software rendering;
-- GNOME, KDE и тайлинговые compositor.
+- GNOME Shell как основную среду;
+- KDE и тайлинговые compositor как совместимый, но не визуально основной путь.
 
 File chooser и уведомления используют D-Bus/xdg-desktop-portal там, где это
 доступно, с безопасным fallback для обычной desktop-сессии.
@@ -399,7 +401,7 @@ Sandboxed package не должен выглядеть поддерживаем�
 - настоящий PTY с тестовым child process;
 - process replacement и PID reuse simulations;
 - LSP fixtures с reorder и stale responses;
-- обновление зафиксированной revision `libghostty`.
+- contract tests для VTE adapter и будущего `libghostty-vt` adapter.
 
 ### UI
 
@@ -422,10 +424,11 @@ Sandboxed package не должен выглядеть поддерживаем�
 ### Этап A: vertical slice
 
 - GTK4 application и одно workspace window;
-- file tree;
+- shallow file list;
 - один GtkSourceView tab;
-- один встроенный `libghostty` terminal;
-- открытие проекта и session restore.
+- один встроенный VTE terminal;
+- backend-neutral terminal launch contract;
+- базовый Agent Inbox.
 
 ### Этап B: рабочий редактор
 
@@ -458,21 +461,31 @@ Sandboxed package не должен выглядеть поддерживаем�
 
 ## 18. Открытые решения
 
-- механизм поставки зафиксированного `libghostty`: vendoring, submodule или
-  воспроизводимый source archive;
-- минимальные версии GTK4, libadwaita и GtkSourceView;
+- архитектура GTK/GSK renderer поверх `libghostty-vt`;
+- момент замены VTE после rendering prototype;
 - нужен ли daemon до первой публичной версии;
 - допустима ли первая версия без Flatpak;
 - формат пользовательских задач и keybindings;
-- поддерживаемые CLI-агенты первого релиза;
-- степень визуальной близости к GNOME HIG и оригинальному Pine.
+- поддерживаемые CLI-агенты первого релиза.
 
-## 19. Ссылки
+## 19. Версионная политика
+
+Минимальная native-система — Ubuntu 24.04 LTS: GTK 4.14, libadwaita 1.5,
+GtkSourceView 5.12 и VTE 0.76. Ubuntu 26.04 проверяется как текущая LTS. N‑1
+применяется к Rust toolchain и поколениям bindings: Rust 1.96.1, gtk4-rs 0.10.3,
+libadwaita-rs 0.8.1, sourceview5-rs 0.10.0 и vte4-rs 0.9.0.
+
+Ubuntu 22.04 не поставляет GTK4 VTE development package. Её поддержка возможна
+через Flatpak или другой bundled runtime, но не входит в native-package MVP.
+Повышение baseline меняет manifest, CI, `AGENTS.md` и документацию одной
+транзакцией.
+
+## 20. Ссылки
 
 - [Pine](https://github.com/batonogov/pine)
 - [Ghostty architecture](https://ghostty.org/docs/about)
-- [Ghostty repository and libghostty status](https://github.com/ghostty-org/ghostty)
-- [Ghostling embedding example](https://github.com/ghostty-org/ghostling)
+- [Ghostty public VT headers](https://github.com/ghostty-org/ghostty/tree/main/include/ghostty/vt)
+- [Zed terminal](https://zed.dev/features)
 - [GTK4 documentation](https://docs.gtk.org/gtk4/)
 - [GtkApplication](https://docs.gtk.org/gtk4/class.Application.html)
 - [GtkSourceView 5](https://gnome.pages.gitlab.gnome.org/gtksourceview/gtksourceview5/)

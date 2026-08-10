@@ -3,10 +3,10 @@
 > Нативное Linux-приложение для работы с CLI-агентами, кодом, Git и
 > несколькими параллельными задачами в одном наблюдаемом рабочем пространстве.
 
-Проект находится на стадии проектирования. Он вдохновлён
+Проект находится на стадии первого vertical slice. Он вдохновлён
 [Pine](https://github.com/batonogov/pine), но не является механическим переносом
 SwiftUI/AppKit-кода. Linux-реализация строится вокруг GTK4, GtkSourceView и
-`libghostty`, а переносимая продуктовая логика пишется на Rust.
+сменного terminal backend, а переносимая продуктовая логика пишется на Rust.
 
 ## Продуктовая идея
 
@@ -27,7 +27,8 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 
 ## Принципы
 
-- **Native Linux.** GTK4/libadwaita вместо Electron и браузерной оболочки.
+- **Native GNOME.** GTK4/libadwaita и GNOME HIG вместо Electron, WebView или
+  копирования macOS-паттернов.
 - **Terminal first.** CLI-агенты запускаются без подмены их интерфейса.
 - **Local first.** Код, терминальные процессы и метаданные задач остаются на
   машине пользователя.
@@ -44,9 +45,10 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 
 | Область | Решение |
 | --- | --- |
-| Интерфейс | GTK4 + libadwaita через `gtk4-rs` |
+| Интерфейс | GTK4/libadwaita, API floor Ubuntu 24.04 (4.14/1.5) |
 | Редактор | GtkSourceView 5 |
-| Терминал | полный `libghostty` через C ABI |
+| Терминал MVP | VTE 4 за toolkit-neutral контрактом |
+| Целевой терминал | `libghostty-vt` + собственный GTK/GSK renderer |
 | Доменное ядро | Rust |
 | Асинхронная работа | GLib main loop для UI, Tokio для фоновых сервисов |
 | Git | безопасный запуск `git` без shell-интерполяции |
@@ -68,7 +70,7 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 │              │                                             │
 │              ├─────────────────────────────────────────────┤
 │              │ agent: codex · task: linux-ui     terminal │
-│              │                    libghostty               │
+│              │                       VTE MVP               │
 ├──────────────┴─────────────────────────────────────────────┤
 │ branch · worktree · diagnostics · agent status · cursor   │
 └────────────────────────────────────────────────────────────┘
@@ -83,7 +85,7 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 
 1. открытие проекта и дерево файлов;
 2. редактирование через GtkSourceView;
-3. один встроенный терминал на `libghostty`;
+3. один встроенный VTE-терминал за сменным `pine-terminal` API;
 4. Git status и просмотр diff;
 5. запуск поддерживаемого CLI-агента в выбранной директории;
 6. связь `Task → Run → Terminal → Process`;
@@ -99,13 +101,26 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 
 - [Архитектура Linux-версии](docs/linux-architecture.md)
 - [ADR 0001: нативный GTK-стек](docs/adr/0001-native-linux-gtk.md)
+- [Локальная разработка](docs/development.md)
+
+## Запуск MVP
+
+Целевые среды — Ubuntu 24.04 и 26.04 LTS. После установки системных development
+packages:
+
+```sh
+cargo run -p pine-linux
+```
+
+Точные N‑1 версии Rust-компонентов и команды для Ubuntu описаны в документации
+разработки.
 
 ## Источники и вдохновение
 
 - [Pine](https://github.com/batonogov/pine) — продуктовая модель нативного
   редактора для CLI-agent workflow.
-- [Ghostty](https://github.com/ghostty-org/ghostty) — терминальный движок и
-  пример разделения общего ядра и нативных оболочек.
+- [Ghostty](https://github.com/ghostty-org/ghostty) — terminal state для
+  будущего собственного renderer и пример разделения ядра и нативных оболочек.
 - [GTK4](https://docs.gtk.org/gtk4/) и
   [GtkSourceView 5](https://gnome.pages.gitlab.gnome.org/gtksourceview/gtksourceview5/)
   — основа Linux-интерфейса и редактора.

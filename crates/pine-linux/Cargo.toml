@@ -1,0 +1,16 @@
+[package]
+name = "pine-linux"
+version.workspace = true
+edition.workspace = true
+rust-version.workspace = true
+
+[dependencies]
+adw.workspace = true
+gtk.workspace = true
+pine-core.workspace = true
+pine-terminal.workspace = true
+sourceview5.workspace = true
+vte4.workspace = true
+
+[lints]
+workspace = true

@@ -1,6 +1,6 @@
 # ADR 0001: нативная Linux-оболочка на GTK4
 
-- Статус: принято для начального проектирования
+- Статус: принято и реализуется
 - Дата: 2026-08-10
 
 ## Контекст
@@ -11,7 +11,7 @@ APIs, notifications и packaging зависят от macOS и не перено�
 
 Linux-версия должна:
 
-- выглядеть и вести себя как Linux desktop application;
+- выглядеть и вести себя как GNOME application;
 - встраивать быстрый полноценный терминал;
 - поддерживать редактор, LSP, Git и несколько project windows;
 - оставить доменную логику пригодной для будущей Windows-версии;
@@ -28,23 +28,28 @@ Linux frontend строится на:
 - GTK4 и libadwaita;
 - Rust bindings `gtk4-rs`;
 - GtkSourceView 5 для редактора;
-- полном `libghostty` через C ABI для терминала;
+- VTE как сменный terminal backend для первого MVP;
+- `libghostty-vt` и собственный GTK/GSK renderer как целевой terminal stack;
 - Rust для общего доменного и сервисного ядра.
 
 GTK остаётся только presentation/platform слоем. Task registry, routing, Git,
 LSP, evidence, adapters и persistence не зависят от GTK.
 
-`libghostty` фиксируется на точной upstream revision и скрывается за внутренним
-`pine-terminal` API. Типы и callbacks Ghostty не пересекают границу терминального
-crate. Обновление revision требует contract, integration и UI tests.
+Backend-neutral launch model находится в `pine-terminal`, а VTE adapter
+локализован в terminal-модуле `pine-linux`. Типы и callbacks VTE не попадают в
+portable core. При реализации нового renderer `libghostty-vt` также остаётся за
+этой границей.
+
+Верхнеуровневый `include/ghostty.h` не используется: upstream помечает его как
+внутренний API для собственного macOS-приложения, а не внешний C ABI.
 
 ## Обоснование
 
 ### GTK4
 
 GTK предоставляет нативные окна, ввод, clipboard, accessibility, Wayland/X11 и
-desktop integration. Linux frontend самого Ghostty также использует GTK, поэтому
-эта связка имеет наименьшее архитектурное расхождение с терминальным движком.
+desktop integration. libadwaita задаёт ожидаемые GNOME layout, adaptive behavior
+и controls без имитации macOS chrome.
 
 ### GtkSourceView
 
@@ -55,8 +60,9 @@ WebView. Недостающая IDE-функциональность добав�
 ### Rust
 
 Rust подходит для конкурентных фоновых сервисов, process supervision, SQLite,
-Git/LSP parsing и будущего Windows platform layer. C ABI позволяет использовать
-`libghostty`, не перенося остальную программу на Zig.
+Git/LSP parsing и будущего Windows platform layer. C ABI будущего
+`libghostty-vt` позволит использовать terminal state Ghostty, не перенося
+остальную программу на Zig.
 
 ### Отдельные нативные оболочки
 
@@ -79,8 +85,8 @@ Windows — WinUI или другой Windows-native toolkit. Это дорож�
 ### Tauri + Monaco + xterm.js
 
 Не выбрано основным путём. Tauri легче Electron и ускоряет общий frontend, но
-`libghostty` требует нативной render surface. Смешение WebView, нативного GPU
-виджета и GTK усложняет focus, clipping, drag-and-drop, IME и accessibility.
+собственный renderer требует нативной render surface. Смешение WebView, GPU
+widget и GTK усложняет focus, clipping, drag-and-drop, IME и accessibility.
 
 Tauri остаётся допустимым fallback, если стоимость двух нативных оболочек
 окажется выше продуктовой ценности.
@@ -89,7 +95,8 @@ Tauri остаётся допустимым fallback, если стоимост�
 
 Не выбрано: интеграция с internals Ghostty была бы проще, но доменное ядро,
 SQLite, LSP, Windows platform work и прикладная экосистема важнее минимального
-FFI. Взаимодействие с Ghostty ограничивается стабильной C-границей.
+FFI. Будущее взаимодействие с Ghostty ограничивается публичной C-границей
+`libghostty-vt`.
 
 ### Qt
 
@@ -97,7 +104,7 @@ FFI. Взаимодействие с Ghostty ограничивается ста
 Ghostty и нативной GNOME/Linux-интеграцией. Может быть пересмотрено, если единый
 Linux/Windows UI станет обязательным требованием.
 
-### Внешнее окно Ghostty
+### Внешнее окно терминала
 
 Отклонено: отдельный процесс не даёт встроенных split-панелей, точного focus,
 маршрутизации Inbox до terminal tab и общего lifecycle рабочей области.
@@ -107,7 +114,7 @@ Linux/Windows UI станет обязательным требованием.
 Положительные:
 
 - нативный интерфейс и desktop integration;
-- полноценный GPU-терминал без `xterm.js`;
+- полноценный GTK-терминал без `xterm.js` уже в MVP;
 - единый GTK input/focus/accessibility pipeline;
 - переносимое доменное ядро;
 - возможность отдельного качественного Windows frontend.
@@ -115,9 +122,9 @@ Linux/Windows UI станет обязательным требованием.
 Отрицательные:
 
 - Linux и Windows потребуют разные UI-слои;
-- `libghostty` API пока меняется и требует pinned revision;
-- сборке нужен Zig toolchain;
-- Rust ↔ C/Zig FFI добавляет unsafe boundary;
+- будущий renderer на `libghostty-vt` потребует значительной GPU/text work;
+- VTE и будущий Ghostty backend надо удерживать за одним контрактом;
+- Rust ↔ C/Zig FFI позднее добавит unsafe boundary;
 - GtkSourceView потребует собственной LSP-интеграции и части IDE-функций;
 - Wayland, X11, Mesa, fractional scaling и разные desktop environments
   увеличивают тестовую матрицу.
@@ -125,24 +132,25 @@ Linux/Windows UI станет обязательным требованием.
 ## Ограничения реализации
 
 1. GTK-типы не входят в `pine-core`.
-2. Весь Ghostty FFI находится в одном crate.
+2. Все terminal backend API находятся за границей `pine-terminal`.
 3. Нельзя определять agent lifecycle из terminal text.
 4. Долгие операции не выполняются в GLib main loop.
 5. Каждый async result проверяет project/document/task generation.
 6. Packaging не ослабляет process и filesystem проверки незаметно для
    пользователя.
-7. Обновление GTK, GtkSourceView или Ghostty не принимается без regression tests.
+7. Обновление GTK, GtkSourceView, VTE или Ghostty не принимается без regression
+   tests.
 
 ## Условия пересмотра
 
 Решение пересматривается, если выполняется хотя бы одно условие:
 
-- полный `libghostty` нельзя устойчиво встроить в сторонний GTK widget;
+- GTK/GSK renderer на `libghostty-vt` не даёт измеримого выигрыша против VTE;
 - GtkSourceView не обеспечивает требуемую производительность или correctness;
 - поддержка двух нативных UI блокирует поставку Windows-версии;
 - sandbox packaging делает host CLI workflow практически невозможным;
 - upstream API Ghostty меняется так, что pinning и адаптация становятся
   несопоставимы с ценностью библиотеки.
 
-В таком случае отдельно оцениваются Tauri/Monaco, Qt или собственный renderer на
-`libghostty-vt`; изменение оформляется новым ADR, а не неявной заменой стека.
+В таком случае отдельно оцениваются долгосрочный VTE, другой native engine,
+Tauri/Monaco или Qt; изменение оформляется новым ADR, а не неявной заменой стека.

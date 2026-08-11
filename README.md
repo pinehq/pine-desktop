@@ -100,6 +100,7 @@ SwiftUI/AppKit-кода. Linux-реализация строится вокру�
 ## Документация
 
 - [Архитектура Linux-версии](docs/linux-architecture.md)
+- [Перенос продуктового flow Pine на GNOME](docs/gnome-product-flow.md)
 - [ADR 0001: нативный GTK-стек](docs/adr/0001-native-linux-gtk.md)
 - [Локальная разработка](docs/development.md)
 

@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Pine
+Comment=Native GNOME workspace for CLI agents
+TryExec=@PINE_BINARY@
+Exec="@PINE_BINARY@"
+Path=@PINE_PROJECT_ROOT@
+Icon=utilities-terminal-symbolic
+Terminal=false
+OnlyShowIn=GNOME;
+X-GNOME-Autostart-enabled=true

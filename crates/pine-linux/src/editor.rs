@@ -9,7 +9,8 @@ const MAX_PREVIEW_BYTES: u64 = 2 * 1024 * 1024;
 pub struct EditorPanel {
     root: gtk::Box,
     buffer: sourceview5::Buffer,
-    page: adw::TabPage,
+    tabs: adw::TabView,
+    scroller: gtk::ScrolledWindow,
 }
 
 impl EditorPanel {
@@ -52,7 +53,12 @@ impl EditorPanel {
         root.append(&tab_bar);
         root.append(&tabs);
 
-        let panel = Self { root, buffer, page };
+        let panel = Self {
+            root,
+            buffer,
+            tabs,
+            scroller,
+        };
         if let Some(path) = initial_path {
             panel.open_path(path);
         } else {
@@ -66,13 +72,21 @@ impl EditorPanel {
         &self.root
     }
 
+    pub fn connect_document_visibility_changed<F>(&self, callback: F)
+    where
+        F: Fn(bool) + 'static,
+    {
+        self.tabs
+            .connect_n_pages_notify(move |tabs| callback(tabs.n_pages() > 0));
+    }
+
     pub fn open_path(&self, path: &Path) {
         let result = read_preview(path);
         let title = path
             .file_name()
             .and_then(|name| name.to_str())
             .unwrap_or("Untitled");
-        self.page.set_title(title);
+        self.ensure_page().set_title(title);
 
         match result {
             Ok(text) => {
@@ -88,6 +102,14 @@ impl EditorPanel {
                     .set_text(&format!("Unable to open {title}\n\n{message}\n"));
                 self.buffer.set_modified(false);
             }
+        }
+    }
+
+    fn ensure_page(&self) -> adw::TabPage {
+        if self.tabs.n_pages() == 0 {
+            self.tabs.append(&self.scroller)
+        } else {
+            self.tabs.page(&self.scroller)
         }
     }
 }

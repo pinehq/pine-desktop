@@ -1,3 +1,4 @@
+use std::cell::Cell;
 use std::path::{Path, PathBuf};
 
 use adw::prelude::*;
@@ -20,13 +21,35 @@ pub fn present(application: &adw::Application) {
     let terminal = TerminalPanel::new(&launch);
 
     let split = gtk::Paned::new(gtk::Orientation::Vertical);
-    split.set_position(600);
+    set_default_workspace_split(&split);
+    split.connect_map({
+        let initialized = Cell::new(false);
+        move |split| {
+            if !initialized.replace(true) {
+                set_default_workspace_split(split);
+            }
+        }
+    });
     split.set_resize_start_child(true);
     split.set_resize_end_child(true);
     split.set_shrink_start_child(false);
     split.set_shrink_end_child(true);
     split.set_start_child(Some(editor.widget()));
     split.set_end_child(Some(terminal.widget()));
+    editor.connect_document_visibility_changed({
+        let split = split.clone();
+        let editor = editor.widget().clone();
+        let terminal = terminal.widget().clone();
+        move |is_visible| {
+            if is_visible {
+                split.set_start_child(Some(&editor));
+                set_default_workspace_split(&split);
+            } else {
+                split.set_start_child(None::<&gtk::Widget>);
+                split.set_end_child(Some(&terminal));
+            }
+        }
+    });
 
     let sidebar = crate::sidebar::build(&project_root, &editor, &tasks);
     let workspace = adw::OverlaySplitView::new();
@@ -177,11 +200,15 @@ fn install_actions(
         let split = split.clone();
         let terminal = terminal.clone();
         move |_, _| {
+            if split.start_child().is_none() {
+                split.set_end_child(Some(&terminal));
+                return;
+            }
             if split.end_child().is_some() {
                 split.set_end_child(None::<&gtk::Widget>);
             } else {
                 split.set_end_child(Some(&terminal));
-                split.set_position(600);
+                set_default_workspace_split(&split);
             }
         }
     });
@@ -221,6 +248,19 @@ fn install_actions(
     application.set_accels_for_action("app.quit", &["<Control>q"]);
 }
 
+fn set_default_workspace_split(split: &gtk::Paned) {
+    const EDITOR_PERCENT: i32 = 60;
+    const FALLBACK_EDITOR_HEIGHT: i32 = 500;
+
+    let available_height = split.height();
+    let editor_height = if available_height > 0 {
+        available_height * EDITOR_PERCENT / 100
+    } else {
+        FALLBACK_EDITOR_HEIGHT
+    };
+    split.set_position(editor_height);
+}
+
 fn show_shortcuts(window: &adw::ApplicationWindow) {
     let terminal = gtk::ShortcutsShortcut::builder()
         .accelerator("<Control>grave")
@@ -254,6 +294,7 @@ fn sample_tasks() -> TaskRegistry {
     let mut tasks = TaskRegistry::new();
     let build = TaskId::new(1);
     let review = TaskId::new(2);
+    let explore = TaskId::new(3);
 
     tasks
         .insert(AgentTask::new(build, "Native GNOME MVP", AgentKind::Codex))
@@ -266,6 +307,13 @@ fn sample_tasks() -> TaskRegistry {
         ))
         .expect("unique sample task");
     tasks
+        .insert(AgentTask::new(
+            explore,
+            "Explore agent workflow",
+            AgentKind::Pi,
+        ))
+        .expect("unique sample task");
+    tasks
         .transition(build, TaskState::Working)
         .expect("valid sample transition");
     tasks
@@ -273,6 +321,9 @@ fn sample_tasks() -> TaskRegistry {
         .expect("valid sample transition");
     tasks
         .transition(review, TaskState::WaitingForUser)
+        .expect("valid sample transition");
+    tasks
+        .transition(explore, TaskState::Working)
         .expect("valid sample transition");
     tasks
 }

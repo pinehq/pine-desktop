@@ -2,6 +2,8 @@ use gtk::prelude::*;
 use pine_terminal::{BackendKind, TerminalLaunch};
 use vte4::prelude::*;
 
+use crate::terminal_theme;
+
 pub struct TerminalPanel {
     root: gtk::Box,
 }
@@ -12,12 +14,13 @@ impl TerminalPanel {
         let terminal = vte4::Terminal::new();
         terminal.set_allow_hyperlink(true);
         terminal.set_audible_bell(false);
-        terminal.set_bold_is_bright(true);
+        terminal.set_bold_is_bright(false);
         terminal.set_mouse_autohide(true);
         terminal.set_scroll_on_keystroke(true);
         terminal.set_scrollback_lines(10_000);
         terminal.set_hexpand(true);
         terminal.set_vexpand(true);
+        terminal_theme::follow_system(&terminal);
 
         let backend = BackendKind::VteMvp;
         let title = gtk::Label::builder()

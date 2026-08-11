@@ -37,6 +37,8 @@ provision:
         libgtk-4-dev \
         libgtksourceview-5-dev \
         libvte-2.91-gtk4-dev \
+        nodejs \
+        npm \
         pkg-config \
         ubuntu-desktop-minimal
 
@@ -69,6 +71,22 @@ provision:
         --component rustfmt \
         --profile minimal
 
+      dbus-run-session gsettings set \
+        org.gnome.desktop.peripherals.mouse natural-scroll true
+      dbus-run-session gsettings set \
+        org.gnome.desktop.peripherals.touchpad natural-scroll true
+      dbus-run-session gsettings set \
+        org.gnome.desktop.screensaver lock-enabled false
+      dbus-run-session gsettings set \
+        org.gnome.desktop.session idle-delay 0
+
+      curl --proto '=https' --tlsv1.2 -fsSL \
+        https://chatgpt.com/codex/install.sh | sh
+      curl --proto '=https' --tlsv1.2 -fsSL \
+        https://claude.ai/install.sh | bash -s stable
+      curl --proto '=https' --tlsv1.2 -fsSL \
+        https://pi.dev/install.sh | sh
+
 probes:
   - mode: readiness
     description: GNOME and the Rust toolchain are installed
@@ -81,4 +99,5 @@ probes:
 message: |
   Pine GNOME VM is ready.
   GNOME is shown in the native Virtualization.framework display window.
+  Codex, Claude Code, and Pi are installed in ~/.local/bin.
   Build from the mounted project: cargo run -p pine-linux

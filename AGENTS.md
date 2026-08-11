@@ -13,6 +13,8 @@ and visuals follow GNOME HIG rather than copying Apple UI.
 Keep these invariants:
 
 - GTK objects stay in `pine-linux`; portable crates do not depend on GTK.
+- `docs/gnome-product-flow.md` is the product-flow contract. Update it when a
+  workspace, pane, tab, focus, or Agent Inbox transition changes.
 - A CLI agent remains a real process in a real PTY.
 - Terminal output and process exit are observations, not proof of task success.
 - Internal commands use structured executable/argument values, never implicit
@@ -20,6 +22,9 @@ Keep these invariants:
 - Long-running Git, LSP, storage, and filesystem work must not block GLib's main
   loop.
 - Prefer Wayland and GNOME behavior while retaining GTK's X11 fallback.
+- If other panes exist, closing the last editor tab removes the empty editor
+  leaf and gives its space to the remaining panes. Opening a file recreates an
+  editor leaf; the workspace tree itself is never allowed to become empty.
 
 ## Supported baseline and N-1 policy
 
@@ -88,14 +93,19 @@ Implemented in the first vertical slice:
 
 - Rust workspace and portable task-state invariants
 - native libadwaita workspace window and adaptive sidebar
-- shallow project file navigation and editable GtkSourceView buffer
+- lazy expandable project tree navigation and editable GtkSourceView buffer
+- editor collapse on last-tab close, with automatic terminal expansion
 - real VTE shell behind the backend-neutral terminal launch model
-- sample Agent Inbox and GNOME keyboard actions
+- appearance-aware Pine light/dark terminal palette with a 40% default share
+- Codex, Claude Code, and Pi in the sample Agent Inbox
+- GNOME keyboard actions
 
 Still placeholder or intentionally absent:
 
 - Git service and diff view
 - persistence and task/run/process routing
+- agent launch adapters (the VM-installed CLIs are currently started manually
+  in VTE)
 - LSP and background filesystem scanning
 - `libghostty-vt` renderer
 - packaging and desktop metadata

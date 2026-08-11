@@ -1,6 +1,7 @@
 mod editor;
 mod sidebar;
 mod terminal;
+mod terminal_theme;
 mod window;
 
 use adw::prelude::*;

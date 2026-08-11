@@ -24,6 +24,7 @@ impl fmt::Display for TaskId {
 pub enum AgentKind {
     Codex,
     ClaudeCode,
+    Pi,
     Generic,
 }
 
@@ -32,6 +33,7 @@ impl fmt::Display for AgentKind {
         let label = match self {
             Self::Codex => "Codex",
             Self::ClaudeCode => "Claude Code",
+            Self::Pi => "Pi",
             Self::Generic => "CLI agent",
         };
         formatter.write_str(label)

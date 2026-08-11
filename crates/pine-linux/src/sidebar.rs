@@ -1,5 +1,4 @@
 use std::path::{Path, PathBuf};
-use std::rc::Rc;
 
 use adw::prelude::*;
 use pine_core::{AgentTask, TaskRegistry};
@@ -35,21 +34,53 @@ pub fn build(project_root: &Path, editor: &EditorPanel, tasks: &TaskRegistry) ->
 }
 
 fn build_file_list(project_root: &Path, editor: &EditorPanel) -> gtk::ScrolledWindow {
-    let list = gtk::ListBox::new();
-    list.add_css_class("navigation-sidebar");
-    list.set_selection_mode(gtk::SelectionMode::Single);
+    let root = directory_model(project_root);
+    let tree = gtk::TreeListModel::new(root, false, false, |item| {
+        let item = item.downcast_ref::<gtk::glib::BoxedAnyObject>()?;
+        let node = item.try_borrow::<FileNode>().ok()?;
+        node.is_directory
+            .then(|| directory_model(&node.path).upcast())
+    });
+    let selection = gtk::SingleSelection::new(Some(tree.clone()));
+    selection.set_autoselect(false);
+    selection.set_can_unselect(true);
 
-    let paths = Rc::new(project_entries(project_root));
-    for path in paths.iter() {
-        let is_directory = path.is_dir();
-        let icon = gtk::Image::from_icon_name(if is_directory {
+    let factory = gtk::SignalListItemFactory::new();
+    factory.connect_setup(|_, object| {
+        let Some(list_item) = object.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        let expander = gtk::TreeExpander::new();
+        expander.set_indent_for_icon(true);
+        list_item.set_child(Some(&expander));
+    });
+    factory.connect_bind(|_, object| {
+        let Some(list_item) = object.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        let Some(row) = list_item.item().and_downcast::<gtk::TreeListRow>() else {
+            return;
+        };
+        let Some(item) = row.item().and_downcast::<gtk::glib::BoxedAnyObject>() else {
+            return;
+        };
+        let Ok(node) = item.try_borrow::<FileNode>() else {
+            return;
+        };
+        let Some(expander) = list_item.child().and_downcast::<gtk::TreeExpander>() else {
+            return;
+        };
+
+        let icon_name = if node.is_directory {
             "folder-symbolic"
         } else {
             "text-x-generic-symbolic"
-        });
+        };
+        let icon = gtk::Image::from_icon_name(icon_name);
         let label = gtk::Label::builder()
             .label(
-                path.file_name()
+                node.path
+                    .file_name()
                     .and_then(|name| name.to_str())
                     .unwrap_or("Unknown"),
             )
@@ -57,25 +88,46 @@ fn build_file_list(project_root: &Path, editor: &EditorPanel) -> gtk::ScrolledWi
             .hexpand(true)
             .ellipsize(gtk::pango::EllipsizeMode::End)
             .build();
-
         let content = gtk::Box::new(gtk::Orientation::Horizontal, 8);
         content.set_margin_top(7);
         content.set_margin_end(8);
         content.set_margin_bottom(7);
-        content.set_margin_start(8);
         content.append(&icon);
         content.append(&label);
-        list.append(&content);
-    }
 
-    list.connect_row_activated({
+        expander.set_list_row(Some(&row));
+        expander.set_child(Some(&content));
+    });
+    factory.connect_unbind(|_, object| {
+        let Some(list_item) = object.downcast_ref::<gtk::ListItem>() else {
+            return;
+        };
+        if let Some(expander) = list_item.child().and_downcast::<gtk::TreeExpander>() {
+            expander.set_list_row(None);
+            expander.set_child(None::<&gtk::Widget>);
+        }
+    });
+
+    let list = gtk::ListView::new(Some(selection), Some(factory));
+    list.add_css_class("navigation-sidebar");
+    list.set_single_click_activate(true);
+    list.connect_activate({
         let editor = editor.clone();
-        move |_, row| {
-            let Ok(index) = usize::try_from(row.index()) else {
+        let tree = tree.clone();
+        move |_, position| {
+            let Some(row) = tree.row(position) else {
                 return;
             };
-            if let Some(path) = paths.get(index).filter(|path| path.is_file()) {
-                editor.open_path(path);
+            let Some(item) = row.item().and_downcast::<gtk::glib::BoxedAnyObject>() else {
+                return;
+            };
+            let Ok(node) = item.try_borrow::<FileNode>() else {
+                return;
+            };
+            if node.is_directory {
+                row.set_expanded(!row.is_expanded());
+            } else {
+                editor.open_path(&node.path);
             }
         }
     });
@@ -87,22 +139,62 @@ fn build_file_list(project_root: &Path, editor: &EditorPanel) -> gtk::ScrolledWi
         .build()
 }
 
-fn project_entries(project_root: &Path) -> Vec<PathBuf> {
-    let mut entries: Vec<PathBuf> = std::fs::read_dir(project_root)
-        .into_iter()
-        .flatten()
-        .filter_map(Result::ok)
-        .map(|entry| entry.path())
-        .filter(|path| path.file_name().is_some_and(|name| name != ".git"))
-        .collect();
+#[derive(Clone, Debug)]
+struct FileNode {
+    path: PathBuf,
+    is_directory: bool,
+}
 
-    entries.sort_by(|left, right| {
-        right
-            .is_dir()
-            .cmp(&left.is_dir())
-            .then_with(|| left.file_name().cmp(&right.file_name()))
+fn directory_model(directory_path: &Path) -> gtk::gio::ListStore {
+    let model = gtk::gio::ListStore::new::<gtk::glib::BoxedAnyObject>();
+    let directory_path = directory_path.to_path_buf();
+    let directory = gtk::gio::File::for_path(&directory_path);
+    let destination = model.clone();
+
+    gtk::glib::spawn_future_local(async move {
+        let Ok(enumerator) = directory
+            .enumerate_children_future(
+                "standard::name,standard::type",
+                gtk::gio::FileQueryInfoFlags::NOFOLLOW_SYMLINKS,
+                gtk::glib::Priority::default(),
+            )
+            .await
+        else {
+            return;
+        };
+
+        let mut nodes = Vec::new();
+        loop {
+            let Ok(batch) = enumerator
+                .next_files_future(128, gtk::glib::Priority::default())
+                .await
+            else {
+                return;
+            };
+            if batch.is_empty() {
+                break;
+            }
+            nodes.extend(batch.into_iter().filter_map(|info| {
+                let name = info.name();
+                (name.as_os_str() != ".git").then(|| FileNode {
+                    path: directory_path.join(name),
+                    is_directory: info.file_type() == gtk::gio::FileType::Directory,
+                })
+            }));
+        }
+
+        nodes.sort_by(|left, right| {
+            right
+                .is_directory
+                .cmp(&left.is_directory)
+                .then_with(|| left.path.file_name().cmp(&right.path.file_name()))
+        });
+        for node in nodes {
+            destination.append(&gtk::glib::BoxedAnyObject::new(node));
+        }
     });
-    entries
+
+    model
 }
 
 fn build_git_placeholder() -> adw::StatusPage {

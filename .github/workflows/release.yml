@@ -88,7 +88,7 @@ jobs:
               'Label: Pine' \
               'Suite: stable' \
               'Codename: stable' \
-              'Architectures: amd64 arm64 all' \
+              'Architectures: amd64 arm64' \
               'Components: main' \
               'Description: Pine Desktop APT repository' \
               'SignWith: B08C3C2205CB59D8' \

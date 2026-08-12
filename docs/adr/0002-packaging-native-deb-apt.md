@@ -29,9 +29,11 @@ Pine Desktop — нативное GNOME-приложение на GTK4 (см. AD
    формируют release PR, его merge создаёт git-тег `vX.Y.Z` и GitHub Release,
    тег запускает CI-сборку пакета и публикацию в репозиторий.
 
-Версия приложения единая на весь Rust workspace и берётся из общего
-`[workspace.package].version` в корневом `Cargo.toml`; release-please
-обновляет её одним релизом для всех crate'ов через `cargo-workspace`-плагин.
+Версией продукта считается версия бинарного crate'а `crates/pine-linux`.
+Внутренние crate'ы (`pine-core`, `pine-git`, `pine-terminal`) помечены
+`publish = false` и не имеют самостоятельной пользовательской версии.
+`release-please` таргетирует `crates/pine-linux` и бампит его версию; сборка
+внутри workspace идёт по path и не зависит от версий внутренних crate'ов.
 
 ## Обоснование
 
@@ -54,8 +56,8 @@ GitHub Pages раздаёт репозиторий статически и бе�
 
 Conventional Commits уже используются в истории репозитория (`feat:`, `fix:`,
 `docs:`). `release-please` читает их, подсчитывает SemVer-бамп, готовит
-release PR с changelog и обновляет `version` в `Cargo.toml` (и
-соответствующие записи в `Cargo.lock`).
+release PR с changelog и обновляет `version` в `crates/pine-linux/Cargo.toml`
+(и запись в `Cargo.lock`).
 Merge PR единственная ручная операция; остальное — от git-тега до публикации
 пакета — делает CI. Полный контроль над Rust-тулчейном: сборка идёт на свежем
 `rustc` в GitHub Actions, а не на archive-`rustc` из дистрибутива.
@@ -103,7 +105,7 @@ Conventional Commits. Это расходится с целью — выпуск
 - авто-релизы из обычных коммитов через release PR;
 - автообновления у пользователей через `apt upgrade`;
 - полный контроль над Rust-тулчейном и packaging-конвейером;
-- единая workspace-версия, обновляемая одним release PR.
+- версионирование продукта (бинарник `pine-linux`) одним release PR;
 
 Отрицательные:
 
@@ -116,19 +118,20 @@ Conventional Commits. Это расходится с целью — выпуск
 ## Ограничения реализации
 
 1. `.deb` собирается на Ubuntu 24.04 (API-floor по `AGENTS.md` и
-   `docs/development.md`); один и тот же
-   пакет работает и на 24.04, и на 26.04.
+   `docs/development.md`) для архитектур `amd64` и `arm64`; один пакет
+   работает и на 24.04, и на 26.04.
 2. Поле `Depends` в control-файле точно отражает системные библиотеки:
    `libgtk-4-1`, `libadwaita-1-0`, `libgtksourceview-5-0`,
    `libvte-2.91-gtk4` (и `git` как `Recommends`).
 3. GPG-ключ ротируется через subkeys; приватный ключ хранится только в
    CI-секретах.
 4. Sandbox-режимы запуска не включаются по умолчанию.
-5. Версии crate'ов задаются явно (`version = "0.1.0"` в каждом
-   `crates/*/Cargo.toml`), а не через `version.workspace = true`:
-   `release-please` (`cargo-workspace`-плагин) не поддерживает Cargo workspace
-   inheritance для version и падает с `invalid [package.version]`. Плагин сам
-   синхронно обновляет версии всех members при релизе.
+5. Версией продукта считается версия `crates/pine-linux`; внутренние crate'ы
+   (`pine-core`, `pine-git`, `pine-terminal`) помечены `publish = false` и не
+   имеют самостоятельной версии. Версии в `crates/*/Cargo.toml` задаются явно
+   (не через `version.workspace = true`), т.к. `release-please`
+   (`cargo-workspace`-плагин) не поддерживает Cargo workspace inheritance для
+   version. Релиз таргетирует `crates/pine-linux`.
 
 ## Условия пересмотра
 

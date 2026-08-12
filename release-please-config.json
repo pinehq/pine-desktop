@@ -4,7 +4,7 @@
   "include-component-in-tag": false,
   "include-v-in-tag": true,
   "packages": {
-    ".": {
+    "crates/pine-linux": {
       "component": "pine"
     }
   },

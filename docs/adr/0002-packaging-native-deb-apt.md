@@ -124,6 +124,11 @@ Conventional Commits. Это расходится с целью — выпуск
 3. GPG-ключ ротируется через subkeys; приватный ключ хранится только в
    CI-секретах.
 4. Sandbox-режимы запуска не включаются по умолчанию.
+5. Версии crate'ов задаются явно (`version = "0.1.0"` в каждом
+   `crates/*/Cargo.toml`), а не через `version.workspace = true`:
+   `release-please` (`cargo-workspace`-плагин) не поддерживает Cargo workspace
+   inheritance для version и падает с `invalid [package.version]`. Плагин сам
+   синхронно обновляет версии всех members при релизе.
 
 ## Условия пересмотра
 

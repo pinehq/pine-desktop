@@ -8,6 +8,33 @@
 SwiftUI/AppKit-кода. Linux-реализация строится вокруг GTK4, GtkSourceView и
 сменного terminal backend, а переносимая продуктовая логика пишется на Rust.
 
+## Установка
+
+Pine Desktop распространяется как нативный `.deb`-пакет через собственный
+APT-репозиторий на GitHub Pages. Поддерживаются Ubuntu 24.04 и 26.04 на
+архитектурах `amd64` и `arm64`.
+
+```bash
+# добавить GPG-ключ репозитория
+wget -qO - https://pinehq.github.io/pine-desktop/apt/pubkey.gpg \
+  | gpg --dearmor \
+  | sudo tee /usr/share/keyrings/pine.gpg >/dev/null
+
+# добавить репозиторий
+echo "deb [arch=amd64,arm64 signed-by=/usr/share/keyrings/pine.gpg] \
+https://pinehq.github.io/pine-desktop/apt stable main" \
+  | sudo tee /etc/apt/sources.list.d/pine.list
+
+# установить
+sudo apt update && sudo apt install pine
+```
+
+Обновления прилетают автоматически вместе с `sudo apt upgrade`.
+
+> Пакеты публикуются автоматически при каждом релизе. До первого релиза с
+> собранным `.deb` репозиторий пуст; используйте локальную сборку
+> (`cargo run -p pine-linux`) из исходников этого репозитория.
+
 ## Продуктовая идея
 
 Агент остаётся обычным CLI-процессом в настоящем терминале. Приложение не

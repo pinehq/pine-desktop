@@ -122,7 +122,7 @@ Conventional Commits. Это расходится с целью — выпуск
    работает и на 24.04, и на 26.04.
 2. Поле `Depends` в control-файле точно отражает системные библиотеки:
    `libgtk-4-1`, `libadwaita-1-0`, `libgtksourceview-5-0`,
-   `libvte-2.91-gtk4` (и `git` как `Recommends`).
+   `libvte-2.91-gtk4-0` (и `git` как `Recommends`).
 3. GPG-ключ ротируется через subkeys; приватный ключ хранится только в
    CI-секретах.
 4. Sandbox-режимы запуска не включаются по умолчанию.

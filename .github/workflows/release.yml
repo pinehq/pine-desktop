@@ -11,9 +11,96 @@ permissions:
 jobs:
   release-please:
     runs-on: ubuntu-latest
+    outputs:
+      releases_created: ${{ steps.release-please.outputs.releases_created }}
     steps:
       - uses: actions/checkout@v4
-      - uses: googleapis/release-please-action@v4
+      - id: release-please
+        uses: googleapis/release-please-action@v4
         with:
           config-file: release-please-config.json
           manifest-file: .release-please-manifest.json
+
+  build:
+    needs: release-please
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ${{ matrix.runner }}
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - arch: amd64
+            runner: ubuntu-24.04
+          - arch: arm64
+            runner: ubuntu-24.04-arm
+    steps:
+      - uses: actions/checkout@v4
+      - name: Install GTK development packages
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes --no-install-recommends \
+            build-essential ca-certificates pkg-config \
+            libgtk-4-dev libadwaita-1-dev \
+            libgtksourceview-5-dev libvte-2.91-gtk4-dev
+      - name: Install Rust 1.96.1
+        uses: dtolnay/rust-toolchain@master
+        with:
+          toolchain: 1.96.1
+      - name: Install cargo-deb
+        run: cargo install cargo-deb --locked
+      - name: Build .deb
+        run: cargo deb -p pine-linux
+      - name: Upload .deb
+        uses: actions/upload-artifact@v4
+        with:
+          name: deb-${{ matrix.arch }}
+          path: target/debian/*.deb
+
+  publish-apt:
+    needs: [build, release-please]
+    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    runs-on: ubuntu-24.04
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout gh-pages
+        uses: actions/checkout@v4
+        with:
+          ref: gh-pages
+      - name: Download .deb artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: tmp
+          pattern: deb-*
+      - name: Install reprepro
+        run: sudo apt-get update && sudo apt-get install --yes reprepro
+      - name: Import GPG signing key
+        env:
+          APT_SIGNING_KEY: ${{ secrets.APT_SIGNING_KEY }}
+        run: printf '%s' "$APT_SIGNING_KEY" | gpg --import --batch --pinentry-mode loopback
+      - name: Configure APT repository
+        run: |
+          mkdir -p apt/conf
+          if [ ! -f apt/conf/distributions ]; then
+            printf '%s\n' \
+              'Origin: Pine HQ' \
+              'Label: Pine' \
+              'Suite: stable' \
+              'Codename: stable' \
+              'Architectures: amd64 arm64 all' \
+              'Components: main' \
+              'Description: Pine Desktop APT repository' \
+              'SignWith: B08C3C2205CB59D8' \
+              > apt/conf/distributions
+          fi
+      - name: Add packages to repository
+        run: find tmp -name '*.deb' -print0 | xargs -0 -r reprepro -b apt includedeb stable
+      - name: Publish public key
+        run: gpg --armor --export B08C3C2205CB59D8 > apt/pubkey.gpg
+      - name: Commit and push
+        run: |
+          git config user.name "pine-bot"
+          git config user.email "bot@pinehq.io"
+          git add -A
+          git commit -m "apt: publish release" || echo "nothing to commit"
+          git push

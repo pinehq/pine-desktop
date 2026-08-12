@@ -488,12 +488,17 @@ name = "pine-core"
 version = "0.1.0"
 
 [[package]]
+name = "pine-git"
+version = "0.1.0"
+
+[[package]]
 name = "pine-linux"
 version = "0.1.0"
 dependencies = [
  "gtk4",
  "libadwaita",
  "pine-core",
+ "pine-git",
  "pine-terminal",
  "sourceview5",
  "vte4",

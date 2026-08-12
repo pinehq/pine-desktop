@@ -93,7 +93,10 @@ Implemented in the first vertical slice:
 
 - Rust workspace and portable task-state invariants
 - native libadwaita workspace window and adaptive sidebar
-- lazy expandable project tree navigation and editable GtkSourceView buffer
+- local folder picker with one canonical workspace window per project root
+- lazy expandable project tree navigation and asynchronous GtkSourceView loads
+- guarded file saves with dirty-state UI, GIO etags, and stale-load rejection
+- background Git status with branch display and bounded diff previews
 - editor collapse on last-tab close, with automatic terminal expansion
 - real VTE shell behind the backend-neutral terminal launch model
 - appearance-aware Pine light/dark terminal palette with a 40% default share
@@ -102,7 +105,9 @@ Implemented in the first vertical slice:
 
 Still placeholder or intentionally absent:
 
-- Git service and diff view
+- Welcome/recent-project UI and session restoration
+- full editor/terminal tab model and recursive pane tree
+- Git staging, branch switching, blame, diff gutters, and worktrees
 - persistence and task/run/process routing
 - agent launch adapters (the VM-installed CLIs are currently started manually
   in VTE)

@@ -1,4 +1,5 @@
 mod editor;
+mod git;
 mod sidebar;
 mod terminal;
 mod terminal_theme;

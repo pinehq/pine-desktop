@@ -6,7 +6,14 @@ use pine_core::{AgentTask, TaskRegistry};
 use crate::editor::EditorPanel;
 
 #[must_use]
-pub fn build(project_root: &Path, editor: &EditorPanel, tasks: &TaskRegistry) -> gtk::Box {
+pub fn build(
+    project_root: &Path,
+    editor: &EditorPanel,
+    tasks: &TaskRegistry,
+    parent: &adw::ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
+    branch_label: &gtk::Label,
+) -> gtk::Box {
     let stack = gtk::Stack::builder()
         .transition_type(gtk::StackTransitionType::Crossfade)
         .vexpand(true)
@@ -17,7 +24,11 @@ pub fn build(project_root: &Path, editor: &EditorPanel, tasks: &TaskRegistry) ->
         Some("files"),
         "Files",
     );
-    stack.add_titled(&build_git_placeholder(), Some("git"), "Git");
+    stack.add_titled(
+        &crate::git::build(project_root, parent, toast_overlay, branch_label),
+        Some("git"),
+        "Git",
+    );
     stack.add_titled(&build_agent_list(tasks), Some("agents"), "Agents");
 
     let switcher = gtk::StackSwitcher::builder()
@@ -195,14 +206,6 @@ fn directory_model(directory_path: &Path) -> gtk::gio::ListStore {
     });
 
     model
-}
-
-fn build_git_placeholder() -> adw::StatusPage {
-    adw::StatusPage::builder()
-        .icon_name("org.gnome.Builder-symbolic")
-        .title("Git status")
-        .description("The Git service is the next vertical slice.")
-        .build()
 }
 
 fn build_agent_list(tasks: &TaskRegistry) -> gtk::ScrolledWindow {

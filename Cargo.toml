@@ -1,6 +1,7 @@
 [workspace]
 members = [
     "crates/pine-core",
+    "crates/pine-git",
     "crates/pine-linux",
     "crates/pine-terminal",
 ]
@@ -15,6 +16,7 @@ rust-version = "1.96.1"
 adw = { package = "libadwaita", version = "=0.8.1", features = ["gtk_v4_6", "v1_5"] }
 gtk = { package = "gtk4", version = "=0.10.3", features = ["v4_14"] }
 pine-core = { path = "crates/pine-core" }
+pine-git = { path = "crates/pine-git" }
 pine-terminal = { path = "crates/pine-terminal" }
 sourceview5 = { version = "=0.10.0", features = ["gtk_v4_14", "v5_12"] }
 vte4 = { version = "=0.9.0", features = ["v0_76"] }

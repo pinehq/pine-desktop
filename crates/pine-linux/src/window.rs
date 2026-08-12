@@ -1,4 +1,5 @@
-use std::cell::Cell;
+use std::cell::{Cell, RefCell};
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
 
 use adw::prelude::*;
@@ -8,15 +9,44 @@ use pine_terminal::TerminalLaunch;
 use crate::editor::EditorPanel;
 use crate::terminal::TerminalPanel;
 
+thread_local! {
+    static WORKSPACES: RefCell<HashMap<PathBuf, gtk::glib::WeakRef<adw::ApplicationWindow>>> =
+        RefCell::new(HashMap::new());
+}
+
 pub fn present(application: &adw::Application) {
-    if let Some(window) = application.active_window() {
-        window.present();
+    let project_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/tmp"));
+    let hold = application.hold();
+    let application = application.clone();
+    gtk::glib::spawn_future_local(async move {
+        let fallback = project_root.clone();
+        let project_root = match gtk::gio::spawn_blocking(move || project_root.canonicalize()).await
+        {
+            Ok(Ok(project_root)) => project_root,
+            _ => fallback,
+        };
+        present_project(&application, project_root);
+        drop(hold);
+    });
+}
+
+fn present_project(application: &adw::Application, project_root: PathBuf) {
+    if activate_existing_workspace(&project_root) {
         return;
     }
 
-    let project_root = std::env::current_dir().unwrap_or_else(|_| PathBuf::from("/tmp"));
     let tasks = sample_tasks();
-    let editor = EditorPanel::new(initial_document(&project_root).as_deref());
+    let toast_overlay = adw::ToastOverlay::new();
+    let window = adw::ApplicationWindow::builder()
+        .application(application)
+        .default_height(900)
+        .default_width(1440)
+        .title("Pine")
+        .build();
+    let editor = EditorPanel::new(initial_document(&project_root).as_deref(), {
+        let toast_overlay = toast_overlay.clone();
+        move |message| crate::git::show_toast(&toast_overlay, &message)
+    });
     let launch = TerminalLaunch::user_shell(&project_root).expect("current directory is absolute");
     let terminal = TerminalPanel::new(&launch);
 
@@ -51,7 +81,15 @@ pub fn present(application: &adw::Application) {
         }
     });
 
-    let sidebar = crate::sidebar::build(&project_root, &editor, &tasks);
+    let branch_label = gtk::Label::new(Some("Loading Git…"));
+    let sidebar = crate::sidebar::build(
+        &project_root,
+        &editor,
+        &tasks,
+        &window,
+        &toast_overlay,
+        &branch_label,
+    );
     let workspace = adw::OverlaySplitView::new();
     workspace.set_content(Some(&split));
     workspace.set_max_sidebar_width(320.0);
@@ -61,22 +99,57 @@ pub fn present(application: &adw::Application) {
     workspace.set_show_sidebar(true);
 
     let header = build_header(&project_root, &workspace, &tasks);
-    let status = build_status_bar();
+    let status = build_status_bar(&branch_label);
     let toolbar = adw::ToolbarView::new();
     toolbar.add_top_bar(&header);
     toolbar.set_content(Some(&workspace));
     toolbar.add_bottom_bar(&status);
 
-    let window = adw::ApplicationWindow::builder()
-        .application(application)
-        .content(&toolbar)
-        .default_height(900)
-        .default_width(1440)
-        .title("Pine")
-        .build();
-
-    install_actions(application, &window, &split, terminal.widget());
+    toast_overlay.set_child(Some(&toolbar));
+    window.set_content(Some(&toast_overlay));
+    window.connect_close_request({
+        let editor = editor.clone();
+        let toast_overlay = toast_overlay.clone();
+        move |_| {
+            if editor.has_unsaved_changes() {
+                crate::git::show_toast(
+                    &toast_overlay,
+                    "Save the current file before closing this workspace",
+                );
+                gtk::glib::Propagation::Stop
+            } else {
+                gtk::glib::Propagation::Proceed
+            }
+        }
+    });
+    install_actions(
+        application,
+        &window,
+        &split,
+        terminal.widget(),
+        &editor,
+        &toast_overlay,
+    );
+    WORKSPACES.with(|workspaces| {
+        workspaces
+            .borrow_mut()
+            .insert(project_root, window.downgrade());
+    });
     window.present();
+}
+
+fn activate_existing_workspace(project_root: &Path) -> bool {
+    WORKSPACES.with(|workspaces| {
+        let Some(window) = workspaces
+            .borrow()
+            .get(project_root)
+            .and_then(gtk::glib::WeakRef::upgrade)
+        else {
+            return false;
+        };
+        window.present();
+        true
+    })
 }
 
 fn build_header(
@@ -106,6 +179,12 @@ fn build_header(
         .tooltip_text("Toggle terminal (Ctrl+`)")
         .build();
 
+    let save_button = gtk::Button::builder()
+        .action_name("win.save")
+        .icon_name("document-save-symbolic")
+        .tooltip_text("Save (Ctrl+S)")
+        .build();
+
     let inbox = build_inbox_button(tasks);
     let menu = build_menu_button();
 
@@ -115,6 +194,7 @@ fn build_header(
     header.pack_end(&menu);
     header.pack_end(&inbox);
     header.pack_end(&terminal_button);
+    header.pack_end(&save_button);
     header
 }
 
@@ -160,6 +240,8 @@ fn build_inbox_button(tasks: &TaskRegistry) -> gtk::MenuButton {
 
 fn build_menu_button() -> gtk::MenuButton {
     let menu = gtk::gio::Menu::new();
+    menu.append(Some("Open Folder…"), Some("win.open-folder"));
+    menu.append(Some("Save"), Some("win.save"));
     menu.append(Some("Keyboard Shortcuts"), Some("win.shortcuts"));
     menu.append(Some("About Pine"), Some("win.about"));
     menu.append(Some("Quit"), Some("app.quit"));
@@ -171,8 +253,7 @@ fn build_menu_button() -> gtk::MenuButton {
         .build()
 }
 
-fn build_status_bar() -> gtk::Box {
-    let branch = gtk::Label::new(Some("main"));
+fn build_status_bar(branch: &gtk::Label) -> gtk::Box {
     let environment = gtk::Label::new(Some("Ubuntu 24.04+ · Wayland first"));
     environment.add_css_class("dim-label");
     environment.set_hexpand(true);
@@ -184,7 +265,7 @@ fn build_status_bar() -> gtk::Box {
     bar.set_margin_bottom(6);
     bar.set_margin_start(12);
     bar.append(&gtk::Image::from_icon_name("org.gnome.Builder-symbolic"));
-    bar.append(&branch);
+    bar.append(branch);
     bar.append(&environment);
     bar
 }
@@ -194,6 +275,8 @@ fn install_actions(
     window: &adw::ApplicationWindow,
     split: &gtk::Paned,
     terminal: &gtk::Box,
+    editor: &EditorPanel,
+    toast_overlay: &adw::ToastOverlay,
 ) {
     let toggle_terminal = gtk::gio::SimpleAction::new("toggle-terminal", None);
     toggle_terminal.connect_activate({
@@ -213,6 +296,22 @@ fn install_actions(
         }
     });
     window.add_action(&toggle_terminal);
+
+    let save = gtk::gio::SimpleAction::new("save", None);
+    save.connect_activate({
+        let editor = editor.clone();
+        move |_, _| editor.save()
+    });
+    window.add_action(&save);
+
+    let open_folder = gtk::gio::SimpleAction::new("open-folder", None);
+    open_folder.connect_activate({
+        let application = application.clone();
+        let window = window.clone();
+        let toast_overlay = toast_overlay.clone();
+        move |_, _| select_project_folder(&application, &window, &toast_overlay)
+    });
+    window.add_action(&open_folder);
 
     let shortcuts = gtk::gio::SimpleAction::new("shortcuts", None);
     shortcuts.connect_activate({
@@ -237,15 +336,66 @@ fn install_actions(
     });
     window.add_action(&about);
 
-    let quit = gtk::gio::SimpleAction::new("quit", None);
-    quit.connect_activate({
-        let application = application.clone();
-        move |_, _| application.quit()
-    });
-    application.add_action(&quit);
+    if application.lookup_action("quit").is_none() {
+        let quit = gtk::gio::SimpleAction::new("quit", None);
+        quit.connect_activate({
+            let application = application.clone();
+            move |_, _| application.quit()
+        });
+        application.add_action(&quit);
+    }
 
     application.set_accels_for_action("win.toggle-terminal", &["<Control>grave"]);
+    application.set_accels_for_action("win.save", &["<Control>s"]);
+    application.set_accels_for_action("win.open-folder", &["<Control><Shift>o"]);
     application.set_accels_for_action("app.quit", &["<Control>q"]);
+}
+
+fn select_project_folder(
+    application: &adw::Application,
+    parent: &adw::ApplicationWindow,
+    toast_overlay: &adw::ToastOverlay,
+) {
+    let dialog = gtk::FileDialog::builder()
+        .accept_label("Open")
+        .modal(true)
+        .title("Open Project Folder")
+        .build();
+    dialog.select_folder(Some(parent), None::<&gtk::gio::Cancellable>, {
+        let application = application.clone();
+        let toast_overlay = toast_overlay.clone();
+        move |result| match result {
+            Ok(folder) => {
+                let Some(path) = folder.path() else {
+                    crate::git::show_toast(
+                        &toast_overlay,
+                        "Pine currently supports local project folders only",
+                    );
+                    return;
+                };
+                let application = application.clone();
+                let toast_overlay = toast_overlay.clone();
+                gtk::glib::spawn_future_local(async move {
+                    match gtk::gio::spawn_blocking(move || path.canonicalize()).await {
+                        Ok(Ok(project_root)) => present_project(&application, project_root),
+                        Ok(Err(error)) => crate::git::show_toast(
+                            &toast_overlay,
+                            &format!("Unable to open project folder: {error}"),
+                        ),
+                        Err(_) => crate::git::show_toast(
+                            &toast_overlay,
+                            "Project folder worker stopped unexpectedly",
+                        ),
+                    }
+                });
+            }
+            Err(error) if error.matches(gtk::gio::IOErrorEnum::Cancelled) => {}
+            Err(error) => crate::git::show_toast(
+                &toast_overlay,
+                &format!("Unable to choose a project folder: {error}"),
+            ),
+        }
+    });
 }
 
 fn set_default_workspace_split(split: &gtk::Paned) {
@@ -262,6 +412,14 @@ fn set_default_workspace_split(split: &gtk::Paned) {
 }
 
 fn show_shortcuts(window: &adw::ApplicationWindow) {
+    let open_folder = gtk::ShortcutsShortcut::builder()
+        .accelerator("<Control><Shift>o")
+        .title("Open project folder")
+        .build();
+    let save = gtk::ShortcutsShortcut::builder()
+        .accelerator("<Control>s")
+        .title("Save current file")
+        .build();
     let terminal = gtk::ShortcutsShortcut::builder()
         .accelerator("<Control>grave")
         .title("Toggle terminal")
@@ -271,6 +429,8 @@ fn show_shortcuts(window: &adw::ApplicationWindow) {
         .title("Quit")
         .build();
     let group = gtk::ShortcutsGroup::builder().title("Workspace").build();
+    group.add_shortcut(&open_folder);
+    group.add_shortcut(&save);
     group.add_shortcut(&terminal);
     group.add_shortcut(&quit);
 

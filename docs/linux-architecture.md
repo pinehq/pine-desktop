@@ -432,8 +432,9 @@ Sandboxed package не должен выглядеть поддерживаем�
 
 ### Этап B: рабочий редактор
 
-- tabs и split tree;
-- Git status/diff;
+- асинхронное открытие и guarded save с etag — реализовано;
+- фоновый Git status и bounded diff preview — реализовано;
+- полноценные tabs и split tree;
 - LSP diagnostics/navigation;
 - file watching и external change review.
 

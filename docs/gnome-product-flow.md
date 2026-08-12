@@ -37,6 +37,11 @@ Welcome window показывает одно основное действие �
 восстанавливает файлы, panes и выбранные вкладки, но не выдаёт мёртвый PTY за
 живую агентскую сессию.
 
+Текущий slice при запуске открывает workspace для process cwd; Welcome и recent
+projects ещё не реализованы. `Ctrl+Shift+O` использует нативный folder picker,
+канонизирует локальный root в фоновом GIO worker и открывает отдельное окно.
+Повторный выбор уже открытого root активирует его существующее окно.
+
 ### 2.2 Workspace
 
 Широкое окно состоит из utility sidebar и рабочей области. Для sidebar подходит
@@ -74,6 +79,12 @@ GTK-представление использует рекурсивные `GtkP
 В GNOME Files строится на `GtkTreeListModel` + `GtkListView`. Стандартная
 keyboard navigation виджета сохраняется; дополнительным действиям задаются
 accessible labels/help. Rename использует F2, а не macOS Return convention.
+
+Текущий slice использует одну переиспользуемую editor page без transient preview.
+Файлы до 2 MiB загружаются асинхронно с generation fence. `Ctrl+S` сохраняет
+с GIO etag: внешнее изменение не перезаписывается молча, а правки, сделанные во
+время save, остаются dirty. Переход к другому файлу и закрытие workspace с
+несохранёнными правками блокируются до сохранения.
 
 ## 3. Editor ↔ terminal
 
@@ -179,6 +190,7 @@ actions, но не фокусирует приблизительно похож�
 | Editor/terminal split tree | recursive `GtkPaned` |
 | Tabs внутри pane | `AdwTabView` + `AdwTabBar` |
 | Code buffer | GtkSourceView 5 |
+| Git status/diff slice | фоновый `pine-git` + bounded GtkSourceView preview |
 | Terminal MVP | VTE GTK4 |
 | Agent Inbox | отдельное `AdwApplicationWindow`, sectioned `GtkListView` |
 | Confirmation | `AdwAlertDialog` |
@@ -196,6 +208,8 @@ libadwaita применяется на API floor Ubuntu 24.04. Новые widget
 | Действие | GNOME shortcut |
 | --- | --- |
 | Quick Open | `Ctrl+P` |
+| Open project | `Ctrl+Shift+O` |
+| Save file | `Ctrl+S` |
 | Закрыть editor tab | `Ctrl+W` при focus в editor |
 | Показать/focus terminal | `Ctrl+grave` |
 | Новая terminal tab | `Ctrl+Shift+T` |

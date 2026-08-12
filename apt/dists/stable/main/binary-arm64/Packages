@@ -1,0 +1,17 @@
+Package: pine
+Version: 0.2.0-1
+Architecture: arm64
+Maintainer: Pine HQ <noreply@pinehq.io>
+Installed-Size: 783
+Depends: libadwaita-1-0, libadwaita-1-0 (>= 1.5~beta), libc6 (>= 2.39), libcairo-gobject2 (>= 1.10.0), libcairo2 (>= 1.2.4), libgdk-pixbuf-2.0-0 (>= 2.22.0), libglib2.0-0t64 (>= 2.54.0), libgtk-4-1, libgtk-4-1 (>= 4.13.5), libgtksourceview-5-0, libgtksourceview-5-0 (>= 3.18.0), libpango-1.0-0 (>= 1.14.0), libvte-2.91-gtk4-0, libvte-2.91-gtk4-0 (>= 0.51.90)
+Recommends: git
+Priority: optional
+Section: devel
+Filename: pool/main/p/pine/pine_0.2.0-1_arm64.deb
+Size: 242044
+SHA256: c9d131847f4b2ae4965265e03e16f5726ec68c2b977959cfa70cc124d6f91b15
+SHA1: 6643d677665ba81a5fca477862331c395d604501
+MD5sum: 57d5e0ad7ca9a3acb5f05aee0af4f518
+Description: [generated from Rust crate pine-linux]
+ Native GNOME workspace for code, Git, terminals, and CLI-agent tasks.
+

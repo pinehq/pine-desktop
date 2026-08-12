@@ -1,0 +1,29 @@
+Origin: Pine HQ
+Label: Pine
+Suite: stable
+Codename: stable
+Date: Wed, 12 Aug 2026 14:52:23 UTC
+Architectures: amd64 arm64
+Components: main
+Description: Pine Desktop APT repository
+MD5Sum:
+ 0509912dace125f4b25e6a52d9492a3d 782 main/binary-amd64/Packages
+ f30c61e2a9ff3ab31e2debc2e3e13ada 525 main/binary-amd64/Packages.gz
+ b2bd79bc28e2e96f1ee03d8790d828a0 121 main/binary-amd64/Release
+ 2adf065ea11f14891721a65644df2933 868 main/binary-arm64/Packages
+ 7b6b3395d9e95e5cf43dda6fff1f0179 563 main/binary-arm64/Packages.gz
+ 7aaa72165d8118b2fc3476228ce9e440 121 main/binary-arm64/Release
+SHA1:
+ 517e105c2f571c79efaf6cc5c83b9d4c2d9da3cd 782 main/binary-amd64/Packages
+ cb63ab98278721584b0e9ca539df82134b7a2dc0 525 main/binary-amd64/Packages.gz
+ f55477252a8bb4978bf15ce65cad03ab6b3781cd 121 main/binary-amd64/Release
+ 5498ac4af902275f9773f5b4b2b5c2d8f8798f69 868 main/binary-arm64/Packages
+ d9c7dfdf39255b278761c43d1f63f2fe5b87876a 563 main/binary-arm64/Packages.gz
+ ee82a524944ae52ea870c6531d431b1dc7f5e53c 121 main/binary-arm64/Release
+SHA256:
+ ecef3939f08bf757a683fcb6498a878c2a01fa9f6bf073b483e83cbe8af3ea23 782 main/binary-amd64/Packages
+ c6a9b16a0f8be82cff1cef4c3a7a00adceee58edea984017d505a6f427ba6c80 525 main/binary-amd64/Packages.gz
+ fc6dfba465f197f6f38c0b8d5798292bf49ddb206439a2b0df5de6963f9a3ed5 121 main/binary-amd64/Release
+ 9eddd347b9c076ee2680628eb38ddd579ff03cea4fe7738a80d0c0640ae4f66c 868 main/binary-arm64/Packages
+ bd55f4e41820cebff90b9e6223b60cff9bf93a77cc23428628b02a1b6b83051d 563 main/binary-arm64/Packages.gz
+ ef55dcd3c6e2b369545e0bf10a4b13e81f11da9e8af0765d1ac805d2b157eac4 121 main/binary-arm64/Release

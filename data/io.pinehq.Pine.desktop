@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Name=Pine
+GenericName=Workspace for CLI agents
+Comment=Native GNOME workspace for code, Git, terminals, and CLI-agent tasks
+Exec=/usr/bin/pine %f
+Icon=io.pinehq.Pine
+Terminal=false
+Categories=GNOME;GTK;Development;IDE;
+Keywords=code;git;terminal;agent;development;
+StartupNotify=true

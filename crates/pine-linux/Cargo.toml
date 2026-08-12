@@ -15,3 +15,19 @@ vte4.workspace = true
 
 [lints]
 workspace = true
+
+[package.metadata.deb]
+name = "pine"
+maintainer = "Pine HQ <noreply@pinehq.io>"
+copyright = "2026, Pine HQ"
+depends = "$auto, libgtk-4-1, libadwaita-1-0, libgtksourceview-5-0, libvte-2.91-gtk4-0"
+recommends = "git"
+section = "devel"
+priority = "optional"
+extended-description = """Native GNOME workspace for code, Git, terminals, and CLI-agent tasks."""
+assets = [
+    ["target/release/pine-linux", "usr/bin/pine", "755"],
+    ["../../data/io.pinehq.Pine.desktop", "usr/share/applications/io.pinehq.Pine.desktop", "644"],
+    ["../../data/io.pinehq.Pine.metainfo.xml", "usr/share/metainfo/io.pinehq.Pine.metainfo.xml", "644"],
+    ["../../data/icons/hicolor/scalable/apps/io.pinehq.Pine.svg", "usr/share/icons/hicolor/scalable/apps/io.pinehq.Pine.svg", "644"],
+]

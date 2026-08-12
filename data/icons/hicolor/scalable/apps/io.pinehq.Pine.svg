@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!-- Placeholder icon for Pine Desktop. Temporary artwork; replace with final branding. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128" width="128" height="128" role="img" aria-label="Pine">
+  <rect width="128" height="128" rx="24" ry="24" fill="#1c71d8"/>
+  <!-- stylized pine tree -->
+  <path d="M64 16 L38 56 L51 56 L31 88 L49 88 L42 106 L86 106 L79 88 L97 88 L77 56 L90 56 Z"
+        fill="#ffffff"/>
+  <rect x="59" y="106" width="10" height="12" fill="#ffffff"/>
+</svg>

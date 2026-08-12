@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>io.pinehq.Pine</id>
+  <metadata_license>FSFAP</metadata_license>
+  <name>Pine</name>
+  <summary>Native GNOME workspace for code, Git, terminals, and CLI-agent tasks</summary>
+  <description>
+    <p>Pine Desktop is a native GNOME application for working with CLI agents,
+      code, Git, and several parallel tasks in a single observable workspace.
+      An agent remains an ordinary CLI process in a real terminal; Pine does
+      not replace it with a custom chat, but arranges alongside it an editor,
+      project navigation, Git status, and a global Agent Inbox.</p>
+    <p>The user keeps control over the process and over changes: the agent
+      works in the terminal, the code stays in view, and verification evidence
+      stays observable.</p>
+  </description>
+  <url type="homepage">https://github.com/pinehq/pine-desktop</url>
+  <launchable type="desktop-id">io.pinehq.Pine.desktop</launchable>
+  <provides>
+    <binary>pine</binary>
+  </provides>
+  <developer id="io.pinehq">
+    <name>Pine HQ</name>
+  </developer>
+  <content_rating type="oars-1.1"/>
+  <releases>
+    <release version="0.2.0" date="2026-08-12">
+      <description>
+        <p>First vertical slice of the native GNOME workspace: libadwaita
+          window with adaptive sidebar, project tree, asynchronous editor with
+          dirty-state saves, background Git status with bounded diff previews,
+          VTE terminal, and Codex/Claude/Pi in the sample Agent Inbox.</p>
+      </description>
+    </release>
+  </releases>
+</component>

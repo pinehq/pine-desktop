@@ -3,6 +3,7 @@ name: Release
 on:
   push:
     branches: [main]
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -23,7 +24,7 @@ jobs:
 
   build:
     needs: release-please
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ${{ matrix.runner }}
     strategy:
       fail-fast: false
@@ -58,7 +59,7 @@ jobs:
 
   publish-apt:
     needs: [build, release-please]
-    if: ${{ needs.release-please.outputs.releases_created == 'true' }}
+    if: ${{ github.event_name == 'workflow_dispatch' || needs.release-please.outputs.releases_created == 'true' }}
     runs-on: ubuntu-24.04
     permissions:
       contents: write

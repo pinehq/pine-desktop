@@ -3,16 +3,10 @@
   "release-type": "rust",
   "include-component-in-tag": false,
   "include-v-in-tag": true,
-  "group-pull-request-title-pattern": "chore: release v${version}",
+  "pull-request-title-pattern": "chore: release v${version}",
   "packages": {
     "crates/pine-linux": {
       "component": "pine"
     }
-  },
-  "plugins": [
-    {
-      "type": "cargo-workspace",
-      "merge": true
-    }
-  ]
+  }
 }

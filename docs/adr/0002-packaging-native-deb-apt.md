@@ -126,12 +126,14 @@ Conventional Commits. Это расходится с целью — выпуск
 3. GPG-ключ ротируется через subkeys; приватный ключ хранится только в
    CI-секретах.
 4. Sandbox-режимы запуска не включаются по умолчанию.
-5. Версией продукта считается версия `crates/pine-linux`; внутренние crate'ы
-   (`pine-core`, `pine-git`, `pine-terminal`) помечены `publish = false` и не
-   имеют самостоятельной версии. Версии в `crates/*/Cargo.toml` задаются явно
-   (не через `version.workspace = true`), т.к. `release-please`
-   (`cargo-workspace`-плагин) не поддерживает Cargo workspace inheritance для
-   version. Релиз таргетирует `crates/pine-linux`.
+5. Версией продукта считается версия `crates/pine-linux`; внутренние
+   crate'ы (`pine-core`, `pine-git`, `pine-terminal`) помечены
+   `publish = false` и не имеют самостоятельной версии. Версии в
+   `crates/*/Cargo.toml` задаются явно (не через `version.workspace = true`),
+   т.к. `release-please` не поддерживает Cargo workspace inheritance.
+   Релиз таргетирует `crates/pine-linux` через rust-strategy напрямую, без
+   `cargo-workspace`-плагина: плагин хардкодил заголовок release-PR без
+   версии и блокировал авто-теггинг.
 
 ## Условия пересмотра
 

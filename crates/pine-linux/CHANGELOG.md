@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.4.0](https://github.com/pinehq/pine-desktop/compare/v0.3.0...v0.4.0) (2026-08-13)
+
+
+### Features
+
+* **linux:** document pine-linux crate purpose ([bab2727](https://github.com/pinehq/pine-desktop/commit/bab2727857deb03be0283d8fd96c5ddf076d9b65))
+
 ## [0.3.0](https://github.com/pinehq/pine-desktop/compare/v0.2.0...v0.3.0) (2026-08-13)
 
 

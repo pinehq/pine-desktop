@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/pinehq/pine-desktop/compare/v0.2.0...v0.3.0) (2026-08-13)
+
+
+### Features
+
+* **packaging:** add desktop entry, AppStream metainfo, icon, cargo-deb config ([3bee64a](https://github.com/pinehq/pine-desktop/commit/3bee64ae641ddd54ea229944bbf8feb8ee51aa0b))
+
 ## [0.2.0](https://github.com/pinehq/pine-desktop/compare/v0.1.0...v0.2.0) (2026-08-12)
 
 

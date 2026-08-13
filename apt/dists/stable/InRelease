@@ -5,42 +5,42 @@ Origin: Pine HQ
 Label: Pine
 Suite: stable
 Codename: stable
-Date: Wed, 12 Aug 2026 14:52:23 UTC
+Date: Thu, 13 Aug 2026 07:48:58 UTC
 Architectures: amd64 arm64
 Components: main
 Description: Pine Desktop APT repository
 MD5Sum:
- 0509912dace125f4b25e6a52d9492a3d 782 main/binary-amd64/Packages
- f30c61e2a9ff3ab31e2debc2e3e13ada 525 main/binary-amd64/Packages.gz
+ dbcd2365f023482725ef65ad62561a0d 782 main/binary-amd64/Packages
+ aef7f7153e232428ea45589e33bdc8f5 528 main/binary-amd64/Packages.gz
  b2bd79bc28e2e96f1ee03d8790d828a0 121 main/binary-amd64/Release
- 2adf065ea11f14891721a65644df2933 868 main/binary-arm64/Packages
- 7b6b3395d9e95e5cf43dda6fff1f0179 563 main/binary-arm64/Packages.gz
+ 2cf196e0b5d91d165aa2c667b84d9c4c 868 main/binary-arm64/Packages
+ 12830cebc74ce3d0b3b34de4a4b87a8d 559 main/binary-arm64/Packages.gz
  7aaa72165d8118b2fc3476228ce9e440 121 main/binary-arm64/Release
 SHA1:
- 517e105c2f571c79efaf6cc5c83b9d4c2d9da3cd 782 main/binary-amd64/Packages
- cb63ab98278721584b0e9ca539df82134b7a2dc0 525 main/binary-amd64/Packages.gz
+ 979bf272681abc21517406ec3aebac4efeccfc9f 782 main/binary-amd64/Packages
+ 18948a0355934b56ebaff4f7b1bdabab6e5df9d0 528 main/binary-amd64/Packages.gz
  f55477252a8bb4978bf15ce65cad03ab6b3781cd 121 main/binary-amd64/Release
- 5498ac4af902275f9773f5b4b2b5c2d8f8798f69 868 main/binary-arm64/Packages
- d9c7dfdf39255b278761c43d1f63f2fe5b87876a 563 main/binary-arm64/Packages.gz
+ ccb9ef923d5111efbf02cb928e64330446aef52a 868 main/binary-arm64/Packages
+ 62868677749b461054610bb6e99294a9a0f28a96 559 main/binary-arm64/Packages.gz
  ee82a524944ae52ea870c6531d431b1dc7f5e53c 121 main/binary-arm64/Release
 SHA256:
- ecef3939f08bf757a683fcb6498a878c2a01fa9f6bf073b483e83cbe8af3ea23 782 main/binary-amd64/Packages
- c6a9b16a0f8be82cff1cef4c3a7a00adceee58edea984017d505a6f427ba6c80 525 main/binary-amd64/Packages.gz
+ c2ebefe4cdc685479590fd8337f37a3886c19faaed9b06a14ad5e5e47c71e741 782 main/binary-amd64/Packages
+ 668cf5e78d51dc729a9bc9b1bcffd11f1677b36a67d834fb7417aa2d42a36054 528 main/binary-amd64/Packages.gz
  fc6dfba465f197f6f38c0b8d5798292bf49ddb206439a2b0df5de6963f9a3ed5 121 main/binary-amd64/Release
- 9eddd347b9c076ee2680628eb38ddd579ff03cea4fe7738a80d0c0640ae4f66c 868 main/binary-arm64/Packages
- bd55f4e41820cebff90b9e6223b60cff9bf93a77cc23428628b02a1b6b83051d 563 main/binary-arm64/Packages.gz
+ 1f53ba988ef378f7b0b571719fc3eef79753240c23ef58bd6e5d3caaa63bd619 868 main/binary-arm64/Packages
+ ad62ecc2fcf96fbe8c84b8537b1157b8e482f6b8232126deecac1f75c54e7b84 559 main/binary-arm64/Packages.gz
  ef55dcd3c6e2b369545e0bf10a4b13e81f11da9e8af0765d1ac805d2b157eac4 121 main/binary-arm64/Release
 -----BEGIN PGP SIGNATURE-----
 
-iQGzBAEBCgAdFiEEwU0YSYbc27Oq3KD4sIw8IgXLWdgFAmp8iKcACgkQsIw8IgXL
-WdjFBwv/YoOmogsdEKnry2TJJ/eQk8jig+2ca5kpobwk8jZv11Nt3VH3GxyJlAE3
-ZTgqkiVGYqwTu42jsscZR+10wJA/GcSljM8SI/26Q4Py8BLC+mnngh7rltcgM6Sj
-jaCE+igTFYArNrd5WqsgkFbMOWU5Y9G94CrVeb5fkEVFKDZ90Nnx5j82hVzDs8g6
-l9etbAENlJe94O+Y3rXpS842WcuE1Wis5VOHiQRDWgaJIbTGyFxu7xDspuZ4D2Zj
-ZYmsPQJaVZkBG9XB0fP2GPWuon1KIZ+v4xufiAss2EU1QYjH+U8J9cz+U0GMeyOi
-L7VrxDwPLsA+i6xF+4EG6LWjs1doFFjgfvS0TlO41v1SeA/fybLyy6sg1NUG+yoo
-T4wka+mqpQlrexuEavqJSH/WllqXleWskXzrh8xGpxxSe/QOus+CQxZyRcRMpPSC
-WaEShmir7HMdlF/AnuiP2vyvb8hxvylsBEVChHxI3MvmoenkOSm6GbsHU8OqONG2
-ORnQSpjs
-=BaRK
+iQGzBAEBCgAdFiEEwU0YSYbc27Oq3KD4sIw8IgXLWdgFAmp9duoACgkQsIw8IgXL
+WdicnAv9GJ07PLLenp78UX5WK0FIyy4hhw2so9D07b1fQgPwXV5OL8ja2qWPJh/f
+b03J8BTM1ZHbFi03eSXsNTmenc5r4/kYxFhrbWXwxMnbI55L0CDOOv2qPLlZFBgg
+Kg4NwHaGHAf90dRoA3BtAqQlqKuCMsc7wZQCKbeAXxiowakMHycDSM35l5kr8rLY
+P25g2j76ARKk0aypaGEGAkICB6mVnBN/uQCD+l0ZCbPkippZtN6Xv9/0rsvT/uoZ
+iiNrogEozCG7WTnBZWY/OK+fgBUm1xEm44MYWHEw7E8uC7DpAbkVfJ2ccSUwNeHG
+qmXVWN9RuWH5IrhzyYr6pxxTk+SZ6opn21Yk5u6by2u24rajjVxYJB1SAK/lutWF
+bSGUOWLxfSmQmrue1FI2889VBZILjZpPMk6N0VTyHW3Rj4hGej77ln7TYxur1cco
+R+SY/2Jt3g+A+USh8UnLt1Jt97y1ifCGLTKlUNMCosmRGIhweF7Y566HPJeZT09s
+CLK6T+Y1
+=cTPP
 -----END PGP SIGNATURE-----

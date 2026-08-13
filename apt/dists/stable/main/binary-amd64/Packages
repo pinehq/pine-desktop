@@ -1,5 +1,5 @@
 Package: pine
-Version: 0.2.0-1
+Version: 0.4.0-1
 Architecture: amd64
 Maintainer: Pine HQ <noreply@pinehq.io>
 Installed-Size: 805
@@ -7,11 +7,11 @@ Depends: libadwaita-1-0, libadwaita-1-0 (>= 1.5~beta), libc6 (>= 2.39), libglib2
 Recommends: git
 Priority: optional
 Section: devel
-Filename: pool/main/p/pine/pine_0.2.0-1_amd64.deb
-Size: 280664
-SHA256: 021ef3dafca76195810d88184ed1de90cc95ed1009057a5ba43192dd3fb25989
-SHA1: f58051d9ad888cdf8d868d0a0d8e7f5ae3704b77
-MD5sum: e6e9c4c1d3bca9863f48a109dd8f566d
+Filename: pool/main/p/pine/pine_0.4.0-1_amd64.deb
+Size: 280968
+SHA256: 7a2580f8de2bb3e84d87a80f61e375cf33c2bc5a595ff09b19eefc7331598431
+SHA1: 49aba7b891425af563346c2b3355781806926117
+MD5sum: 09448dc2ba8d1b4eff2a74bf5e62aae9
 Description: [generated from Rust crate pine-linux]
  Native GNOME workspace for code, Git, terminals, and CLI-agent tasks.
 

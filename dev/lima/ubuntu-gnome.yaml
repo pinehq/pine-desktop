@@ -57,6 +57,23 @@ provision:
       systemctl enable gdm3.service
       systemctl start gdm3.service
 
+  - mode: system
+    script: |
+      #!/bin/bash
+      set -eux -o pipefail
+
+      # Install the released pine package from the project APT repository,
+      # so the smoke-test VM exercises the same channel as end users.
+      base_url=https://pinehq.github.io/pine-desktop/apt
+      keyring=/usr/share/keyrings/pine.gpg
+      architecture="$(dpkg --print-architecture)"
+      curl --proto '=https' --tlsv1.2 -fsSL "${base_url}/pubkey.gpg" |
+        gpg --dearmor > "${keyring}"
+      echo "deb [arch=${architecture} signed-by=${keyring}] ${base_url} stable main" \
+        > /etc/apt/sources.list.d/pine.list
+      apt-get update
+      DEBIAN_FRONTEND=noninteractive apt-get install --yes pine
+
   - mode: user
     script: |
       #!/bin/bash
@@ -89,15 +106,18 @@ provision:
 
 probes:
   - mode: readiness
-    description: GNOME and the Rust toolchain are installed
+    description: GNOME, the Rust toolchain, and the released pine package
     script: |
       #!/bin/bash
       set -eu
       test -x "${HOME}/.cargo/bin/cargo"
+      test -x /usr/bin/pine
       systemctl is-enabled gdm3.service >/dev/null
 
 message: |
   Pine GNOME VM is ready.
   GNOME is shown in the native Virtualization.framework display window.
+  The released pine package from the project APT repository is installed
+  as /usr/bin/pine; refresh or reinstall it with ./dev/lima/install-pine-apt.sh
   Codex, Claude Code, and Pi are installed in ~/.local/bin.
   Build from the mounted project: cargo run -p pine-linux

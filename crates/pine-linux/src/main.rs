@@ -1,3 +1,8 @@
+//! Native GNOME workspace for CLI agents, code, Git, and terminals.
+//!
+//! `pine-linux` is the GTK4/libadwaita application binary; portable domain
+//! logic lives in `pine-core`, `pine-git`, and `pine-terminal`.
+
 mod editor;
 mod git;
 mod sidebar;
